@@ -1,0 +1,11 @@
+#!/bin/sh
+cd
+mkdir casperKeys
+echo "how many account you want create"
+read numb
+for ((c=0; c < numb; c++))
+do
+casper-client keygen /etc/casper/validator_keys-$c
+cp /etc/casper/validator_keys-$c/public_key.pem /root/casperKeys/$c.pem
+echo $c
+done

@@ -1,0 +1,36 @@
+
+sudo systemctl stop casper-node-launcher.service
+
+sudo rm -rf /etc/casper/1_0_0
+sudo rm -rf /var/lib/casper/bin/1_0_0
+sudo rm -rf /var/lib/casper/casper-node
+sudo rm /etc/casper/casper-node-launcher-state.toml
+
+sudo apt remove -y casper-client casper-node-launcher
+
+cd ~
+curl -JLO https://bintray.com/casperlabs/debian/download_file?file_path=casper-client_0.9.3-0_amd64.deb
+curl -JLO https://bintray.com/casperlabs/debian/download_file?file_path=casper-node-launcher_0.3.1-0_amd64.deb
+
+sudo apt install -y ./casper-client_0.9.3-0_amd64.deb ./casper-node-launcher_0.3.1-0_amd64.deb
+
+sudo -u casper /etc/casper/pull_casper_node_version.sh 1_0_0 delta-11
+sudo -u casper /etc/casper/config_from_example.sh 1_0_0
+
+# After genesis a trusted hash is needed in config.toml.  This retrieves and loads it.  Please verify by looking at the top of /etc/casper/1_0_0/config.toml
+sudo sed -i "/trusted_hash =/c\trusted_hash = '$(curl -s 18.144.176.168:8888/status | jq -r .last_added_block_info.hash | tr -d '\n')'" /etc/casper/1_0_0/config.toml
+
+sudo logrotate -f /etc/logrotate.d/casper-node
+sudo systemctl start casper-node-launcher; sleep 2
+systemctl status casper-node-launcher
+
+sudo systemctl stop casper-node-launcher
+sudo logrotate -f /etc/logrotate.d/casper-node
+sudo -u casper /etc/casper/pull_casper_node_version.sh 1_0_2 delta-11
+sudo -u casper /etc/casper/config_from_example.sh 1_0_2
+sudo -u casper cp /var/lib/casper/bin/1_0_2/casper-node /var/lib/casper/bin/1_0_1
+sudo -u casper sed -i 's/1\.0\.1/1\.0\.2/g' /etc/casper/casper-node-launcher-state.toml
+sudo -u casper sed -i 's/1_0_1/1_0_2/g' /etc/casper/casper-node-launcher-state.toml
+sudo systemctl start casper-node-launcher
+
+watch -n 15 'curl -s localhost:8888/status | jq .last_added_block_info; systemctl status casper-node-launcher; sudo tail /var/log/casper/casper-node.stderr.log'

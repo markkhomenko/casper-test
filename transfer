@@ -1,0 +1,9 @@
+cd
+mkdir casperKeys
+echo "how many account you want tranfer?"
+read number
+for ((c=0; c < number; c++))
+do
+casper-client transfer --chain-name delta-11 --node-address http://127.0.0.1:7777 --secret-key /etc/casper/validator_keys-$c/secret_key.pem --amount 990000000000 --payment-amount 100000000 --target-account $(cat /etc/casper/validator_keys/public_key_hex)
+echo $c
+done
